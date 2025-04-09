@@ -1,0 +1,106 @@
+version: "3.8"
+
+networks:
+  postgresql:
+    driver: bridge
+  prometheus:
+    driver: bridge
+
+services:
+  # Service
+  movies_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    container_name: 'movies-service'
+    restart: always
+    environment:
+      PORT: :8888
+      HOST: postgresql
+      DB: postgres
+      USER_DB: postgres
+      PASSWORD: somePassword
+      DEBUG: "false"
+      DEBUG_PORT: :8080
+    hostname: movies-system
+    ports:
+      - 8080:8080
+      - 8888:8888
+    # command: ./facade
+    depends_on:
+      - postgresql
+    networks:
+      - postgresql
+      - prometheus
+      # - tracing   
+  # PostgreSQL database
+  postgresql:
+    image: postgres:15.2
+    restart: on-failure
+    # set shared memory limit when using docker-compose
+    shm_size: 512mb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: somePassword
+      POSTGRES_DB: postgres
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    container_name: 'postgresql-movies'
+    volumes:
+      - /var/lib/postgresql/data:/var/lib/postgresql/data # том для того, чтобы при перезапуске контейнера все данные сохранялись
+      # - ./postgres.conf:/etc/postgresql/postgresql.conf # конфиг БД
+    # command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - 5432:5432
+    networks:
+      - postgresql
+#####################
+# Metrics - Prometheus
+#####################
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    user: root
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - ./docker/prometheus:/prometheus
+    networks:
+      - prometheus
+    # command:
+    #   - --config.file=/etc/prometheus/prometheus.yml
+  grafana:
+    image: grafana/grafana-oss:10.0.3
+    user: root
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/grafana:/var/lib/grafana
+    networks:
+      - prometheus
+###################
+# jaeger
+###################
+  # jaeger:
+  #   image: jaegertracing/all-in-one:1.48
+  #   container_name: jaeger
+  #   ports:
+  #     - "5775:5775/udp"
+  #     - "6831:6831/udp" # jaeger-client
+  #     - "6832:6832/udp"
+  #     - "5778:5778"
+  #     - "16686:16686" # web
+  #     - "14268:14268"
+  #     - "9411:9411"
+  #   networks:
+  #     - tracing

@@ -1,0 +1,33 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "/pkg/api;movies_proto";
+
+import "buf/validate/validate.proto";
+
+
+service Movies {
+  rpc GetMovies (EmptyRequest) returns (MoviesResponse) {}
+  rpc BuyMovie (MovieRequest) returns (EmptyResponse) {}
+  rpc GetMovie (MovieRequest) returns (stream Movie) {}
+}
+
+message MovieRequest {
+  string MovieName = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message MovieDescription{
+  string Name = 1;
+  string Description = 2;
+}
+
+message EmptyRequest{}
+message EmptyResponse{}
+
+message MoviesResponse{
+  repeated MovieDescription Movies = 1;
+}
+
+message Movie {
+  bytes Bytes = 1;
+}
