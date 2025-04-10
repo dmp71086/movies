@@ -32,7 +32,7 @@ func InitLogger() {
 	// cfg := zap.Config{
 	// 	Encoding:         "json",
 	// 	Level:            zap.NewAtomicLevelAt(zapcore.ErrorLevel),
-	// 	OutputPaths:      []string{"stdoyt"},
+	// 	OutputPaths:      []string{"stdout"},
 	// 	ErrorOutputPaths: []string{"stderr"},
 	// 	EncoderConfig:    encoderConfig,
 	// }
